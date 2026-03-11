@@ -58,10 +58,15 @@ struct cube {
 };
 
 
-struct object3d {
+class object3d {
+public:
 	std::vector<poly3d> polys3d;
 	std::vector<poly2d> polys2d;
-	
+
+	object3d() {};
+	object3d(std::vector<poly3d> polys) {
+		polys3d = polys;
+	}
 };
 
 
@@ -101,12 +106,12 @@ void print_poly3d(const poly3d* poly) {
 }
 void print_poly2d(const poly2d* poly) {
 	if (poly->line) {
-		printf("poly2d:LINE P1(%.2f, %.2f, %.2f) -> P2(%.2f, %.2f, %.2f)\n",
+		printf("poly2d:LINE P1(%.2f, %.2f) -> P2(%.2f, %.2f)\n",
 			poly->p1.x, poly->p1.y,
 			poly->p2.x, poly->p2.y);
 	}
 	else {
-		printf("poly2d:POLY P1(%.2f, %.2f, %.2f) -- P2(%.2f, %.2f, %.2f) -- P3(%.2f, %.2f, %.2f)\n",
+		printf("poly2d:POLY P1(%.2f, %.2f) -- P2(%.2f, %.2f) -- P3(%.2f, %.2f)\n",
 			poly->p1.x, poly->p1.y,
 			poly->p2.x, poly->p2.y,
 			poly->p3.x, poly->p3.y);
@@ -117,13 +122,16 @@ void print_object3d(const object3d* o) {
 	for(const auto& poly: o->polys3d){
 		print_poly3d(&poly);
 	}
+	printf("\n");
 }
 
-//void print_object3d_2d(const object3d* o) {
-//	for (const auto& line : o->lines2d) {
-//		print_line2d(&line);
-//	}
-//}
+void print_object3d_2d(const object3d* o) {
+	for (const auto& poly : o->polys2d) {
+		print_poly2d(&poly);
+	}
+	printf("\n");
+
+}
 
 
 object3d create_cube_from_points(std::vector<point3d> points) {
@@ -182,11 +190,11 @@ object3d create_cube_from_center_point(point3d p, float width) {
 }
 
 
-
 // projections return new objects to populate object 2d polys vector
 // need to change d to be view or fov thing
 point2d project_point(point3d p,float d) {
-	point2d p2d = { p.x * d / p.z ,p.y * d / p.z };
+
+	point2d p2d = { p.x * d/p.z ,p.y * d/p.z };
 	return p2d;
 }
 
@@ -202,6 +210,7 @@ poly2d project_poly(poly3d poly3d,float d) {
 
 void project_object(object3d* o, float d) {
 	// For every "poly" in the "polys3d" vector...f
+	o -> polys2d.clear();
 	for (const auto& poly3d : o->polys3d) {
 		o->polys2d.push_back(project_poly(poly3d, d));
 	}
@@ -219,9 +228,9 @@ void translate_poly3d(poly3d* poly, float dx, float dy, float dz) {
 	poly->p2.z += dz;
 
 	if (!poly->line) {
-		poly->p2.x += dx;
-		poly->p2.y += dy;
-		poly->p2.z += dz;
+		poly->p3.x += dx;
+		poly->p3.y += dy;
+		poly->p3.z += dz;
 	}
 
 }
@@ -235,8 +244,8 @@ void translate_poly2d(poly2d* poly, float dx, float dy) {
 	poly->p2.y += dy;
 
 	if (!poly->line) {
-		poly->p2.x += dx;
-		poly->p2.y += dy;
+		poly->p3.x += dx;
+		poly->p3.y += dy;
 	}
 
 }
@@ -295,6 +304,8 @@ void rotate_object(object3d* o, float xdeg, float ydeg, float zdeg) {
  
 	for (auto& poly : o->polys3d) {
 		matrix_rotate(&poly.p1, rotation);
+		matrix_rotate(&poly.p2, rotation);
+		matrix_rotate(&poly.p3, rotation);
 	}
 }
 
