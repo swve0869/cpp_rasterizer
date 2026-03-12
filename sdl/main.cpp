@@ -55,7 +55,7 @@ point2d lowermost(point2d p1, point2d p2) {
 }
 
 //TODO raster polygon and line instead of just line
-void raster_poly(SDL_Surface* surface, poly2d l, int thickness, Uint32 color) {
+void raster_poly(SDL_Surface* surface, const poly2d l, int thickness, Uint32 color) {
 
     if (l.line) {
         point2d p1 = l.p1;
@@ -104,9 +104,83 @@ void raster_poly(SDL_Surface* surface, poly2d l, int thickness, Uint32 color) {
 
     }
     else { // rasterize poly
-        rasterBox(surface, (int)l.p1.x, (int)l.p1.y, thickness, thickness, 0);
-        rasterBox(surface, (int)l.p2.x, (int)l.p2.y, thickness, thickness, 0);
-        rasterBox(surface, (int)l.p3.x, (int)l.p3.y, thickness, thickness, 0);
+
+        point2d p1 = l.p1; point2d p2 = l.p2; point2d p3 = l.p3;
+        
+        //find bounding box 
+        float Ax = leftmost(p1, leftmost(p2, p3)).x;
+        float Ay = lowermost(p1, lowermost(p2, p3)).y;
+        float w = rightmost(p1, rightmost(p2, p3)).x - Ax;
+        float h = uppermost(p1, uppermost(p2, p3)).y - Ay;
+          
+        //rasterBox(surface, (int)Ax, (int)Ay,(int) w, (int)h, COLOR_MAGENTA);
+        
+       /* point2d v12 = { p1.x - p2.x, p1.y - p2.y };
+        point2d v23 = { p2.x - p3.x, p2.y - p3.y };
+        point2d v31 = { p3.x - p3.x, p1.y - p2.y };*/
+
+       /* point2d v12 = { p1.x , p1.y };
+        point2d v23 = { p2.x , p2.y };
+        point2d v31 = { p3.x , p3.y };*/
+        //poly2d vt = create_poly2d(v12, v23, v31);
+        poly2d vt = l;
+
+        translate_poly2d(&vt,-p1.x,-p1.y);
+
+        rasterBox(surface, (int)vt.p1.x, (int)vt.p1.y, thickness, thickness, COLOR_MAGENTA);
+        rasterBox(surface, (int)vt.p2.x, (int)vt.p2.y, thickness, thickness, COLOR_MAGENTA);
+        rasterBox(surface, (int)vt.p3.x, (int)vt.p3.y, thickness, thickness, COLOR_MAGENTA);
+
+        //poly2d adjusted = create_poly2d(v12, v23, v31);
+        //print_poly2d(&l);
+        print_poly2d(&vt);
+
+        bool detpos = false;
+        //v12 v23 v31
+        // find determinant orientation
+        //point2d center = { (p1.x + p2.x + p3.x) / 3.0f, (p1.y + p2.y + p3.y) / 3.0f  };
+        point2d center = { ((p1.x + p2.x + p3.x) / 3.0f) , (p1.y + p2.y + p3.y) / 3.0f  };
+        rasterBox(surface, (int)center.x, (int)center.y, 1, 1, COLOR_GRAY);
+        if (det(p2 - p1, center - p1) > 0) {
+            printf("det greater\n");
+            detpos = true;
+        }
+        else {
+            printf("det lessthan\n");
+            detpos = false;
+        }
+
+        // move through box
+        for (float x = Ax; x < Ax+w; x+=1 ) {
+            for (float y = Ay; y < Ay+h; y += 1) {
+                //rasterBox(surface, (int)x, y, 1, 1, COLOR_MAGENTA);
+                
+                point2d c = { x,y };
+               
+                float det12 = det(p2 - p1, c - p1);
+                float det23 = det(p3 - p2, c - p2);
+                float det31 = det(p1 - p3, c - p3);
+
+         
+                // if point inside render (greater then det or less than det) 
+                if (det12 > 0 && det23> 0 && det31 > 0 
+                    && detpos || 
+                    det12 < 0 && det23 < 0 && det31 < 0
+                    && !detpos) {
+                    rasterBox(surface, (int)c.x, (int)c.y, 1, 1, COLOR_GRAY);
+                }
+
+
+             
+                // if point outside maybe snap to closest edge?
+                    
+            }
+        }
+       rasterBox(surface, (int)l.p1.x, (int)l.p1.y, thickness, thickness, COLOR_RED);
+       rasterBox(surface, (int)l.p2.x, (int)l.p2.y, thickness, thickness, COLOR_GREEN);
+       rasterBox(surface, (int)l.p3.x, (int)l.p3.y, thickness, thickness, COLOR_BLUE);
+
+       rasterBox(surface, (int)center.x, (int)center.y, thickness, thickness, 0);
 
            
     }
@@ -193,9 +267,6 @@ int main(int argc, char* args[]) {
             if (ev.type == SDL_EVENT_QUIT) {
                 isRunning = false; // User clicked the [X]
             }
-
-            //int* keyboard_state = (int*)SDL_GetKeyboardState(NULL);
-
 
             if (ev.type == SDL_EVENT_KEY_DOWN) {
                 if (ev.key.key == SDLK_ESCAPE) {
@@ -287,6 +358,11 @@ int main(int argc, char* args[]) {
 
 
                 }
+                if (ev.key.key == SDLK_Q) {
+
+
+
+                }
 
                 SDL_FillSurfaceRect(screenSurface, &rect, screen_bckgrnd_color);
 
@@ -327,8 +403,8 @@ int main(int argc, char* args[]) {
             //print_object3d(&obj);
             project_object(&obj, d);
             translate_object2d(&obj, w / 2, h / 2);
-            print_object3d(&obj);
-            print_object3d_2d(&obj);
+            //print_object3d(&obj);
+            //print_object3d_2d(&obj);
             raster_object(screenSurface, &obj);
 
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-const double PI = 3.14159265358979323846;
+
 // Format: 0xRRGGBBAA
 #define COLOR_BLACK       0x000000FF
 #define COLOR_WHITE       0xFFFFFFFF
@@ -27,9 +27,19 @@ struct style {
 
 };
 
+struct rendcontext {
+	int w;
+	int h;
+};
+
 struct point2d {
 	float x;
 	float y;
+	point2d operator-(const point2d b)
+	{
+		point2d r = { x - b.x , y - b.y };
+		return r;
+	}
 };
 
 struct point3d{
@@ -57,7 +67,6 @@ struct cube {
 	point3d vertices[8];
 };
 
-
 class object3d {
 public:
 	std::vector<poly3d> polys3d;
@@ -69,6 +78,19 @@ public:
 	}
 };
 
+
+///MATH stuff
+const double PI = 3.14159265358979323846;
+
+typedef float fv2[2];
+
+
+float det(point2d v1, point2d v2) {
+	return v1.x * v2.y - v2.x * v1.y;	
+}
+
+
+//----------------------------------------------------
 
 poly3d create_poly3d(point3d p1, point3d p2) {
 	poly3d l; l.p1 = p1; l.p2 = p2;
