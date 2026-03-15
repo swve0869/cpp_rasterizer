@@ -24,12 +24,22 @@ struct error {
 };
 
 struct style {
-
+	Uint32 color = COLOR_GRAY;
+	int thickness = 5;
 };
 
-struct rendcontext {
+struct rastercontext {
 	int w;
 	int h;
+};
+
+struct view {
+	float x;
+	float y;
+	float z;
+	float dist;
+	rastercontext rastercontext;
+	// view rotation? / fov?
 };
 
 struct point2d {
@@ -54,6 +64,7 @@ struct poly2d {
 	point2d p2;
 	point2d p3;
 	bool line = false;
+	style style;
 };
 
 struct poly3d {
