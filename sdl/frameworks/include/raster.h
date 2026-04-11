@@ -1,6 +1,7 @@
 
 
 #include <vector>;
+#include "macros.h"
 
 #pragma once
 
@@ -81,7 +82,7 @@ struct cube {
 
 class object3d {
 public:
-	std::vector<poly3d> polys3d;
+	std::vector<poly3d> polys3d ;
 	std::vector<poly3d> polys3d_cam_translated;
 	std::vector<poly2d> polys2d;
 
@@ -128,12 +129,12 @@ poly2d create_poly2d(point2d p1, point2d p2, point2d p3) {
 
 void print_poly3d(const poly3d* poly) {
 	if (poly->line) {
-		printf("poly3d:LINE P1(%.2f, %.2f, %.2f) -> P2(%.2f, %.2f, %.2f)\n",
+		if(PRINT_POLY) printf("poly3d:LINE P1(%.2f, %.2f, %.2f) -> P2(%.2f, %.2f, %.2f)\n",
 		poly->p1.x, poly->p1.y, poly->p1.z,
 		poly->p2.x, poly->p2.y, poly->p2.z);
 	}
 	else {
-		printf("poly3d:POLY P1(%.2f, %.2f, %.2f) -- P2(%.2f, %.2f, %.2f) -- P3(%.2f, %.2f, %.2f)\n",
+		if (PRINT_POLY) printf("poly3d:POLY P1(%.2f, %.2f, %.2f) -- P2(%.2f, %.2f, %.2f) -- P3(%.2f, %.2f, %.2f)\n",
 		poly->p1.x, poly->p1.y, poly->p1.z,
 		poly->p2.x, poly->p2.y, poly->p2.z,
 		poly->p3.x, poly->p3.y, poly->p3.z);
@@ -141,12 +142,12 @@ void print_poly3d(const poly3d* poly) {
 }
 void print_poly2d(const poly2d* poly) {
 	if (poly->line) {
-		printf("poly2d:LINE P1(%.2f, %.2f) -> P2(%.2f, %.2f)\n",
+		if (PRINT_POLY) printf("poly2d:LINE P1(%.2f, %.2f) -> P2(%.2f, %.2f)\n",
 			poly->p1.x, poly->p1.y,
 			poly->p2.x, poly->p2.y);
 	}
 	else {
-		printf("poly2d:POLY P1(%.2f, %.2f) -- P2(%.2f, %.2f) -- P3(%.2f, %.2f)\n",
+		if (PRINT_POLY) printf("poly2d:POLY P1(%.2f, %.2f) -- P2(%.2f, %.2f) -- P3(%.2f, %.2f)\n",
 			poly->p1.x, poly->p1.y,
 			poly->p2.x, poly->p2.y,
 			poly->p3.x, poly->p3.y);
@@ -365,6 +366,25 @@ void rotate_object(object3d* o, float xdeg, float ydeg, float zdeg) {
 		matrix_rotate(&poly.p2, rotation);
 		matrix_rotate(&poly.p3, rotation);
 	}
+
+
+	//SYCL
+
+	sycl::buffer<poly3d, 1> polyBuffer(o->polys3d.data(), sycl::range<1>(o->polys3d.size()));
+
+	for (auto& poly : o->polys3d) {
+		/*sycl::buffer a_buf(poly);*/
+		sycl::buffer<poly3d, 1> polyBuffer(o->polys3d.data(), sycl::range<1>(o->polys3d.size()));
+
+
+		matrix_rotate(&poly.p1, rotation);
+		matrix_rotate(&poly.p2, rotation);
+		matrix_rotate(&poly.p3, rotation);
+	}
+	/*sycl::buffer a_buf(a_vector);
+	sycl::buffer b_buf(b_vector);
+	sycl::buffer sum_buf(sum_parallel.data(), num_items);*/
+
 }
 
 

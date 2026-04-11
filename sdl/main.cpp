@@ -1,10 +1,10 @@
-#include <iostream>
+
 #include <SDL3/SDL.H>
 #include <raster.h>
 #include <obj_parser.h>
 
 
- 
+#include "macros.h"
 
 void setPixel(SDL_Surface* surface, int x, int y, Uint32 color) {
     // Cast the void pointer to a 32-bit integer pointer
@@ -201,8 +201,8 @@ int main(int argc, char* args[]) {
     float tx = 0;
     float ty = 0;
     float tz = 200;
-    float w =  500;
-    float h =  500;
+    float w =  800;
+    float h =  800;
     rastercontext rcontext = { w,h };
     
    
@@ -332,7 +332,20 @@ int main(int argc, char* args[]) {
                  
                     if (ev.key.mod == SDL_KMOD_LSHIFT)
                     {
+                        auto start = std::chrono::high_resolution_clock::now();
                         rotate_object(curr_obj, deg, 0, 0);
+                        auto end = std::chrono::high_resolution_clock::now();
+                        auto t = end - start;
+                        
+                        std::chrono::duration<double, std::milli> duration_ms = end - start;
+                        auto duration_us = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+
+                        printf("elapsed time :%f\n", duration_ms);
+                        //std::cout << "Sum: " << sum << "\n";
+                        //std::cout << "Elapsed time: " << duration_ms.count() << " ms\n";
+                        //std::cout << "Elapsed time: " << duration_us.count() << " us\n";*/
+
                     }
                     else {
                         rotate_object(curr_obj, -deg, 0, 0);
