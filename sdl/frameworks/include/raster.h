@@ -12,7 +12,7 @@
 #define COLOR_GREEN       0x00FF00FF
 #define COLOR_BLUE        0x0000FFFF
 #define COLOR_YELLOW      0xFFFF00FF
-#define COLOR_MAGENTA     0xFF00FFFF
+#define COLOR_MAGENTA     0xFF00FFFF  2155905279
 #define COLOR_CYAN        0x00FFFFFF
 #define COLOR_GRAY        0x808080FF
 #define COLOR_CORNFLOWER  0x6495EDFF // The classic "clear screen" blue
@@ -72,6 +72,7 @@ struct poly3d {
 	point3d p2;
 	point3d p3;
 	bool line = false;
+	style style;
 };
 
 struct cube {
@@ -81,6 +82,7 @@ struct cube {
 class object3d {
 public:
 	std::vector<poly3d> polys3d;
+	std::vector<poly3d> polys3d_cam_translated;
 	std::vector<poly2d> polys2d;
 
 	object3d() {};
@@ -244,7 +246,7 @@ poly2d project_poly(poly3d poly3d,float d) {
 void project_object(object3d* o, float d) {
 	// For every "poly" in the "polys3d" vector...f
 	o -> polys2d.clear();
-	for (const auto& poly3d : o->polys3d) {
+	for (const auto& poly3d : o->polys3d_cam_translated) {
 		o->polys2d.push_back(project_poly(poly3d, d));
 	}
 }
@@ -283,10 +285,33 @@ void translate_poly2d(poly2d* poly, float dx, float dy) {
 
 }
 
+void scale_poly3d(poly3d* poly, float scale) {
+	poly->p1.x *= scale;
+	poly->p1.y *= scale;
+	poly->p1.z *= scale;
 
-void translate_object(object3d* o, float dx, float dy, float dz) {
-	// We iterate through the 3D polys and shift the points
+	poly->p2.x *= scale;
+	poly->p2.y *= scale;
+	poly->p2.z *= scale;
+
+	if (!poly->line) {
+		poly->p3.x *= scale;
+		poly->p3.y *= scale;
+		poly->p3.z *= scale;
+	}
+}
+
+void scale_object(object3d* o, float scale) {
 	for (auto& poly3d : o->polys3d) {
+		scale_poly3d(&poly3d, scale);
+	}
+}
+
+
+void cam_translate_object(object3d* o, float dx, float dy, float dz) {
+	o->polys3d_cam_translated = o->polys3d;
+	// We iterate through the 3D polys and shift the points
+	for (auto& poly3d : o->polys3d_cam_translated) {
 		translate_poly3d(&poly3d, dx, dy, dz);
 	}
 }

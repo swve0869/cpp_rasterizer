@@ -57,13 +57,13 @@ point2d lowermost(point2d p1, point2d p2) {
 }
 
 //TODO raster polygon and line instead of just line
-void raster_poly(SDL_Surface* surface, const poly2d l) {
+void raster_poly(SDL_Surface* surface, const poly2d p) {
 
-    if (l.line) {
-        point2d p1 = l.p1;
-        point2d p2 = l.p2;
+    if (p.line) {
+        point2d p1 = p.p1;
+        point2d p2 = p.p2;
 
-        float step = l.style.thickness; // slope;//1; //std::abs(p1.x - p2.x) / l.style.thickness;
+        float step = p.style.thickness; // slope;//1; //std::abs(p1.x - p2.x) / p.style.thickness;
         float slope = (p2.y - p1.y) / (p2.x - p1.x);
 
         // TODO change raster to take into account surface/screen dinmensions to calculate near flat
@@ -71,43 +71,43 @@ void raster_poly(SDL_Surface* surface, const poly2d l) {
 
         // check for and raster flat or vertical lines
         if (p1.y == p2.y || std::fabs(slope) < float(1.0 / 1500.0)) { // hor. or close to hor. depending on screen width
-            p1 = leftmost(l.p1, l.p2);  p2 = rightmost(l.p1, l.p2);
+            p1 = leftmost(p.p1, p.p2);  p2 = rightmost(p.p1, p.p2);
             for (float x = p1.x; x <= p2.x; x += step) {
-                rasterBox(surface, (int)x, (int)p1.y, l.style.thickness, l.style.thickness, l.style.color);
+                rasterBox(surface, (int)x, (int)p1.y, p.style.thickness, p.style.thickness, p.style.color);
             }
             return;
         }
         if (p1.x == p2.x || std::abs(slope) > 1500) { // vertical or close to vertical depending on screen height
-            p1 = lowermost(l.p1, l.p2); p2 = uppermost(l.p1, l.p2);
+            p1 = lowermost(p.p1, p.p2); p2 = uppermost(p.p1, p.p2);
             for (float y = p1.y; y <= p2.y; y += step) {
-                rasterBox(surface, (int)p1.x, (int)y, l.style.thickness, l.style.thickness, l.style.color);
+                rasterBox(surface, (int)p1.x, (int)y, p.style.thickness, p.style.thickness, p.style.color);
             }
             return;
         }
 
         //calculate slope
-        p1 = leftmost(l.p1, l.p2);  p2 = rightmost(l.p1, l.p2);
+        p1 = leftmost(p.p1, p.p2);  p2 = rightmost(p.p1, p.p2);
 
         //float slope = (p2.y - p1.y) / (p2.x - p1.x);
-        float b = l.p1.y - (l.p1.x * slope);
-        step = std::abs(l.style.thickness / slope);//1; //std::abs(p1.x - p2.x) / l.style.thickness;
+        float b = p.p1.y - (p.p1.x * slope);
+        step = std::abs(p.style.thickness / slope);//1; //std::abs(p1.x - p2.x) / p.style.thickness;
         if (std::abs(slope) < 1) {
-            step = std::abs(slope / l.style.thickness);
+            step = std::abs(slope / p.style.thickness);
         }
 
-        //printf("%.10f : %.10f -->  %.10f : %.10f step:%.10f  slope: %.10f\n", p1.x, p1.y, p2.x, p2.y,step,slope);
+        //printf("%.10f : %.10f -->  %.10f : %.10f step:%.10f  slope: %.10f/n", p1.x, p1.y, p2.x, p2.y,step,slope);
 
 
         for (float x = p1.x; x <= p2.x; x += step) {
             float y = slope * x + b;// +p1.y;
             //std::cout << (int)x << ":" << (int)y << "   slop: " << slope << std::endl;
-            rasterBox(surface, (int)x, (int)y, l.style.thickness, l.style.thickness, l.style.color);
+            rasterBox(surface, (int)x, (int)y, p.style.thickness, p.style.thickness, p.style.color);
         }
 
     }
     else { // rasterize polyp
 
-        point2d p1 = l.p1; point2d p2 = l.p2; point2d p3 = l.p3;
+        point2d p1 = p.p1; point2d p2 = p.p2; point2d p3 = p.p3;
         
         //find bounding box 
         float Ax = leftmost(p1, leftmost(p2, p3)).x;
@@ -119,7 +119,7 @@ void raster_poly(SDL_Surface* surface, const poly2d l) {
         // find determinant orientation with respect to center
         bool detpos = false;
         point2d center = { ((p1.x + p2.x + p3.x) / 3.0f) , (p1.y + p2.y + p3.y) / 3.0f  };
-        rasterBox(surface, (int)center.x, (int)center.y, 1, 1, l.style.color);
+        setPixel(surface, (int)center.x, (int)center.y, p.style.color);
         if (det(p2 - p1, center - p1) > 0) {   
             detpos = true;
         }
@@ -139,7 +139,16 @@ void raster_poly(SDL_Surface* surface, const poly2d l) {
                     && detpos || 
                     det12 < 0 && det23 < 0 && det31 < 0
                     && !detpos) {
-                    rasterBox(surface, (int)c.x, (int)c.y, 1, 1, l.style.color);
+                    
+                    //TODO remove rand color logic
+
+                    
+                    setPixel(surface, (int)x, (int)y, p.style.color);
+                   
+
+
+                    //rasterBox(surface, (int)x, (int)y, p.style.thickness, p.style.thickness, p.style.color);
+
                 }
                 // Possible OPT (reduces unecessary loops)
                 // if point outside maybe snap to closest edge?
@@ -154,7 +163,10 @@ void raster_poly(SDL_Surface* surface, const poly2d l) {
 
 void raster_object(SDL_Surface* surface, object3d* o, view v) {
     // move object to to view space // TODO camera translation matrix
-    translate_object(o, v.x, v.y, v.z);
+    
+
+    // translate the 3d obj to a cam view // TODO Not great copies entire 3d poly vector to 
+    cam_translate_object(o, v.x, v.y, v.z);
 
     //print_object3d(&obj);
     // project object at distance // TODO change this projection to be part of camera translation matrix
@@ -162,11 +174,13 @@ void raster_object(SDL_Surface* surface, object3d* o, view v) {
     // take 2d polys and translate to screen surface coordinates
     translate_object2d(o, v.rastercontext.w / 2, v.rastercontext.h / 2);
     print_object3d(o);
-    print_object3d_2d(o);
+    //print_object3d_2d(o);
 
 
-    for (const auto& poly2d : o->polys2d) {
+    for (auto& poly2d : o->polys2d) {
 
+        //rand color for poly logic
+        poly2d.style.color = (Uint32)std::rand();
         raster_poly(surface, poly2d);
     }
 
@@ -180,13 +194,15 @@ int main(int argc, char* args[]) {
     float xdegree = 0;
     float ydegree = 0;
     float zdegree = 0;
+    
+    const float deg = 10; //standard degree for rotate functions
 
 
     float tx = 0;
     float ty = 0;
     float tz = 200;
-    float w =  1500;
-    float h =  1500;
+    float w =  500;
+    float h =  500;
     rastercontext rcontext = { w,h };
     
    
@@ -197,10 +213,34 @@ int main(int argc, char* args[]) {
     Uint32 screen_bckgrnd_color = (Uint32)COLOR_WHITE;
 
 
+    // TEAPOT
+    object3d* tpot = new object3d;
+    if (!parse_obj_file("C:/Users/swami.velamala/source/repos/sdl/sdl/files/teapot.obj", tpot));
+    scale_object(tpot, 50);
+
+    // CUBE
+    point3d p3d = { 0,0,0 };
+    object3d cube = create_cube_from_center_point(p3d, 100);
+
+    // simple polyp
+    point3d p1 = { 0,0,0 };  point3d p2 = { 40,40,40 }; point3d p3 = { 0,40,0 };
+    poly3d po = create_poly3d(p1, p2, p3);
+    std::vector<poly3d> v = { po };
+    object3d* polyp = new object3d(v);
+
+
+    object3d* arr[] = { polyp,&cube,tpot };
+    int ind = 2;
+    object3d* curr_obj = arr[ind];
+
+
+
+    // dodecahderon
+    //parse_obj_file("C:/Users/swami.velamala/source/repos/sdl/sdl/files/test.obj", &tpot);
 
     // 1. Initialize SDL Video
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL Error: %s\n", SDL_GetError());
+        printf("SDL Error: %s/n", SDL_GetError());
         return 1;
     }
 
@@ -212,7 +252,7 @@ int main(int argc, char* args[]) {
     );
 
     if (window == NULL) {
-        printf("Window Error: %s\n", SDL_GetError());
+        printf("Window Error: %s/n", SDL_GetError());
         return 1;
     }
 
@@ -237,13 +277,15 @@ int main(int argc, char* args[]) {
         static bool rend = false;
         static float d = 200;
         view cur_view = { tx,ty,tz,d,rcontext };
+
+        curr_obj = arr[ind];
         
 
         // 1. Event Handling (The "Input" phase)
         // This inner loop empties the event queue every frame
         while (SDL_PollEvent(&ev) != 0) {
 
-            SDL_Delay(16);
+            //qSDL_Delay(16);
 
             if (ev.type == SDL_EVENT_QUIT) {
                 isRunning = false; // User clicked the [X]
@@ -290,10 +332,10 @@ int main(int argc, char* args[]) {
                  
                     if (ev.key.mod == SDL_KMOD_LSHIFT)
                     {
-                        xdegree -= 10;
+                        rotate_object(curr_obj, deg, 0, 0);
                     }
                     else {
-                        xdegree += 10;
+                        rotate_object(curr_obj, -deg, 0, 0);
                     }
                     rend = false;
                 }
@@ -341,6 +383,14 @@ int main(int argc, char* args[]) {
                 }
                 if (ev.key.key == SDLK_Q) {
 
+                    printf("ind: %d \n", ind);
+                    if (ind < 2) {
+                        ind += 1;
+                    }
+                    else {
+                        ind = 0;
+                    }
+                       
 
 
                 }
@@ -372,17 +422,15 @@ int main(int argc, char* args[]) {
 
 
             //3 point poly test
-            point3d p1 = { 0,0,0 };  point3d p2 = { 40,40,40 }; point3d p3 = { 0,40,0 };
+           /* point3d p1 = { 0,0,0 };  point3d p2 = { 40,40,40 }; point3d p3 = { 0,40,0 };
 
 
             poly3d po = create_poly3d(p1, p2, p3);
             std::vector<poly3d> v = { po };
             object3d obj = object3d(v);
 
-            rotate_object(&obj, xdegree, xdegree, 0);
-
-           
-            raster_object(screenSurface, &obj, cur_view);
+            rotate_object(&obj, 0, xdegree, 0);*/
+            //raster_object(screenSurface, &obj, cur_view);
 
             // axis stuff TODO fix it all
             //// xaxis
@@ -428,14 +476,14 @@ int main(int argc, char* args[]) {
             
                 
             //CUBE STUFF 
-            point3d p3d = { 0,0,0 };
-            object3d cube = create_cube_from_center_point(p3d, 100);
+           // point3d p3d = { 0,0,0 };
+            //object3d cube = create_cube_from_center_point(p3d, 100);
             //translate_object(&cube, 500, 500, 800);
             //project_object(&cube, d);
             //print_object3d(&cube);
             //print_object3d_2d(&cube);
             //printf("rotate: ");
-            rotate_object(&cube, xdegree, xdegree, 0);
+            //rotate_object(&cube, xdegree, 0, 0);
             //printf("translate3d: ");
             //translate_object(&cube, tx, ty, tz);
             //printf("project: ");
@@ -444,12 +492,15 @@ int main(int argc, char* args[]) {
             //translate_object2d(&cube, w / 2, h / 2);
             //printf("raster: ");
 
-            raster_object(screenSurface,&cube, cur_view);
+            //raster_object(screenSurface,&cube, cur_view);
             //printf("end :");
             
 
 
-
+            // teapot
+            
+            //rotate_object(&tpot, xdegree, xdegree, 0);
+            raster_object(screenSurface,curr_obj, cur_view);
 
 
             rend = true;
