@@ -136,8 +136,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="obj_file_parse.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="frameworks\include\obj_parser.h" />
     <ClInclude Include="frameworks\include\raster.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
